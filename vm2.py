@@ -2,34 +2,32 @@
 import sys, os
 
 
-def math2arg(command):
-  mathOp = mathOps.get(command[0], command[0] + "not found ")
-  assign = "M=M" + mathOp + "D\n"
+def binary_arithmetic(command):
+  operator = arithmetic_operators.get(command[0], command[0] + "not found ")
+  assign = "M=M" + operator + "D\n"
   return popD + getM + assign
 
-def math1arg(command):
-  mathOp = mathOps.get(command[0], command[0] + "not found ")
+def unary_arithmetic(command):
+  operator = arithmetic_operators.get(command[0], command[0] + "not found ")
   assign = "M=" + mathOp + "M\n"
   return getM + assign
 
-def mathBool(command):
-  global gtCount
-  global ltCount
-  global eqCount
+def conditional(command):
+  global ALabelnum
 
   if command[0] == "gt":
-    name = "gtTrue" + str(gtCount)
+    name = "@ALabel_" + str(ALabelnum)
     test = "@" + name + "\nD;JGT\n"
-    gtCount += 1
+    
   if command[0] == "eq":
-    name = "eqTrue" + str(eqCount)
+    name = "@ALabel_e" + str(ALabelnum)
     test = "@" + name + "\nD;JEQ\n"
-    eqCount += 1
+    
   if command[0] == "lt":
-    name = "ltTrue" + str(ltCount)
+    name = "@ALabel_" + str(ALabelnum)
     test = "@" + name + "\nD;JLT\n"
-    ltCount += 1
-  
+    
+  ALabelnum+=2
   label = "(" + name + ")\n"
 
   return popD + getM + diffTrue + test + makeFalse + label
@@ -48,7 +46,7 @@ def pushFun(command):
       tpA = "A"
     else:
       tpA = "M"
-    pointer = segPointers.get(segment, "invalid segment: " + segment + "\n")
+    pointer = segment_code.get(segment, "invalid segment: " + segment + "\n")
     indexD = "@" + index + "\nD=A\n"
     valueD = "@" + pointer + "\nA=" + tpA + "+D\nD=M\n"
     value = indexD + valueD
@@ -67,7 +65,7 @@ def popFun(command):
     tpA = "A"
   else:
     tpA = "M"
-  pointer = segPointers.get(segment, "invalid segment: " + segment + "\n")
+  pointer = segment_code.get(segment, "invalid segment: " + segment + "\n")
   indexD = "@" + index + "\nD=A\n"
   addressR13 = "@" + pointer + "\nD=" + tpA + "+D\n@R13\nM=D\n"
   change = "@R13\nA=M\nM=D\n"
@@ -76,7 +74,7 @@ def popFun(command):
 
 
 def initialize(file):
-  file.write("\n///  initializing " + file.name + " ///\n\n") 
+  file.write("\n///  " + file.name + " ///\n\n") 
 
 
 def translate(line):
@@ -116,30 +114,27 @@ def main():
     
 
 translations = {
-    "add": math2arg,
-    "sub": math2arg,
-    "or" : math2arg,
-    "and": math2arg,
-    "neg": math1arg,
-    "not": math1arg,
-    "eq" : mathBool,
-    "gt" : mathBool,
-    "lt" : mathBool,
+    "add": binary_arithmetic,
+    "sub": binary_arithmetic,
+    "or" : binary_arithmetic,
+    "and": binary_arithmetic,
+    "neg": unary_arithmetic,
+    "not": unary_arithmetic,
+    "eq" : conditional,
+    "gt" : conditional,
+    "lt" : conditional,
     "push" : pushFun,
     "pop"  : popFun,
     }
 
-gtCount = 0
-ltCount = 0
-eqCount = 0
-
+ALabelnum=0
 popD = "@SP\nAM=M-1\nD=M\n"
 getM = "@SP\nA=M-1\n"
 diffTrue = "D=M-D\nM=-1\n"
 makeFalse = "@SP\nA=M-1\nM=0\n"
 push = "@SP\nA=M\nM=D\n@SP\nM=M+1\n"
 
-mathOps = {
+arithmetic_operators = {
     "sub" : "-",
     "add" : "+",
     "and" : "&",
@@ -148,7 +143,7 @@ mathOps = {
     "not" : "!",
     }
 
-segPointers = {
+segment_code = {
     "argument" : "ARG",
     "this" : "THIS",
     "that" : "THAT",
